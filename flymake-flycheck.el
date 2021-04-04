@@ -104,14 +104,14 @@ found to be installed."
                               :panic
                               :explanation (format "Flycheck checker %s reported error %S" checker data)))
            ('finished (funcall report-fn
-                               (mapcar #'flymake-flycheck--translate-error data)
+                               (mapcar (apply-partially #'flymake-flycheck--translate-error checker) data)
                                :region (cons (point-min) (point-max))))
            ('interrupted (flymake-flycheck--debug "checker %s reported being interrupted %S" checker data))
            ('suspicious (flymake-flycheck--debug "checker %s reported suspicious result %S" checker data))
            (_ (flymake-flycheck--debug "unexpected status from checker %s: %S" checker status))))))))
 
-(defun flymake-flycheck--translate-error (err)
-  "Translate flycheck error ERR into a flymake diagnostic."
+(defun flymake-flycheck--translate-error (checker err)
+  "Translate flycheck CHECKER error ERR into a flymake diagnostic."
   (flycheck-error-with-buffer err
     ;; TODO: handle id, group, filename
     (flymake-make-diagnostic
@@ -127,7 +127,7 @@ found to be installed."
        (_
         (flymake-flycheck--debug "Translating unknown error level %s to note" (flycheck-error-level err))
         'flymake-note))
-     (flycheck-error-message err))))
+     (format "%s [%s]" (flycheck-error-message err) checker))))
 
 
 (provide 'flymake-flycheck)
