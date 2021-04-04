@@ -32,19 +32,27 @@
 ;; For example, to enable a couple of flycheck checkers in a bash
 ;; buffer, the following code is sufficient:
 
-;; (setq-local flymake-diagnostic-functions
-;;             (list (flymake-flycheck-diagnostic-function-for 'sh-shellcheck)
-;;                   (flymake-flycheck-diagnostic-function-for 'sh-posix-bash)))
+;;     (setq-local flymake-diagnostic-functions
+;;                 (list (flymake-flycheck-diagnostic-function-for 'sh-shellcheck)
+;;                       (flymake-flycheck-diagnostic-function-for 'sh-posix-bash)))
 
-;; TODO:
+;; In order to add diagnostic functions for all checkers that are
+;; available in the current buffer, you can use:
 
-;; - Make it easy to enable all available checkers for a buffer
+;;     (setq-local flymake-diagnostic-functions (flymake-flycheck-all-chained-diagnostic-functions))
 
-;; Caveats:
+;; but note that this will disable any existing flymake diagnostic
+;; backends.
 
-;; - Flycheck UI packages will have no idea of what the checkers are doing,
-;;   because they are run without flycheck's coordination.
-;; - Flycheck's notion of "chained checkers" is not handled automatically
+;; Some caveats:
+
+;; * Flycheck UI packages will have no idea of what the checkers are
+;;   doing, because they are run without flycheck's coordination.
+;; * Flycheck's notion of "chained checkers" is not handled
+;;   automatically, so although multiple chained checkers can be used,
+;;   they will all be executed simultaneously even if earlier checkers
+;;   fail.  This could either be considered a feature, or lead to
+;;   redundant confusing messages.
 
 ;;; Code:
 
@@ -60,14 +68,18 @@ MSG and ARGS are passed to `message'."
   (when flymake-flycheck-debug
     (apply 'message (concat "[flymake-flycheck] " msg) args)))
 
+;;;###autoload
 (defun flymake-flycheck-all-available-diagnostic-functions ()
   "Return a list of diagnostic functions for all usable checkers.
 These might end up providing duplicate functionality, e.g. both
 dash and bash might be used to check a `sh-mode' buffer if both are
-found to be installed."
+found to be installed.
+
+Usually you will want to use `flymake-flycheck-all-chained-diagnostic-functions' instead."
   (mapcar #'flymake-flycheck-diagnostic-function-for
           (seq-filter #'flycheck-may-use-checker flycheck-checkers)))
 
+;;;###autoload
 (defun flymake-flycheck-all-chained-diagnostic-functions ()
   "Return a list of diagnostic functions for the current checker chain."
   (when-let ((start (or flycheck-checker (seq-find #'flycheck-may-use-checker flycheck-checkers))))
@@ -78,7 +90,6 @@ found to be installed."
         (setq nexts (seq-filter #'flycheck-may-use-checker
                                 (seq-mapcat #'flycheck-get-next-checkers nexts))))
       (mapcar #'flymake-flycheck-diagnostic-function-for checkers))))
-
 
 ;;;###autoload
 (defun flymake-flycheck-diagnostic-function-for (checker)
