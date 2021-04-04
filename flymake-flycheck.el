@@ -67,7 +67,8 @@ MSG and ARGS are passed to `message'."
     (lambda (report-fn &rest _)
       (when current-check
         (flymake-flycheck--debug "interrupting defunct syntax check for %s" checker)
-        (flycheck-syntax-check-interrupt current-check))
+        (flycheck-syntax-check-interrupt current-check)
+        (setq current-check nil))
       (flymake-flycheck--debug "start syntax check for %s" checker)
       (setq current-check (flycheck-syntax-check-new
                            :buffer (current-buffer)
