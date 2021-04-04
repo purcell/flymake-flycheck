@@ -60,6 +60,26 @@ MSG and ARGS are passed to `message'."
   (when flymake-flycheck-debug
     (apply 'message (concat "[flymake-flycheck] " msg) args)))
 
+(defun flymake-flycheck-all-available-diagnostic-functions ()
+  "Return a list of diagnostic functions for all usable checkers.
+These might end up providing duplicate functionality, e.g. both
+dash and bash might be used to check a `sh-mode' buffer if both are
+found to be installed."
+  (mapcar #'flymake-flycheck-diagnostic-function-for
+          (seq-filter #'flycheck-may-use-checker flycheck-checkers)))
+
+(defun flymake-flycheck-all-chained-diagnostic-functions ()
+  "Return a list of diagnostic functions for the current checker chain."
+  (when-let ((start (or flycheck-checker (seq-find #'flycheck-may-use-checker flycheck-checkers))))
+    (let (checkers
+          (nexts (list start)))
+      (while nexts
+        (setq checkers (append checkers nexts))
+        (setq nexts (seq-filter #'flycheck-may-use-checker
+                                (seq-mapcat #'flycheck-get-next-checkers nexts))))
+      (mapcar #'flymake-flycheck-diagnostic-function-for checkers))))
+
+
 ;;;###autoload
 (defun flymake-flycheck-diagnostic-function-for (checker)
   "Wrap CHECKER to make a `flymake-diagnostics-functions' backend."
