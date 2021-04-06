@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/purcell/flymake-flycheck/workflows/CI/badge.svg)](https://github.com/purcell/flymake-flycheck/actions)
 <a href="https://www.patreon.com/sanityinc"><img alt="Support me" src="https://img.shields.io/badge/Support%20Me-%F0%9F%92%97-ff69b4.svg"></a>
 
-# flymake-flycheck.el
+# flymake-flycheck.el: use any Emacs flycheck checker as a flymake backend
 
 *WARNING: EARLY PREVIEW CODE, SUBJECT TO CHANGE*
 
