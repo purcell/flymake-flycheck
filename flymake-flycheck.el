@@ -89,7 +89,7 @@ Usually you will want to use `flymake-flycheck-all-chained-diagnostic-functions'
         (setq checkers (append checkers nexts))
         (setq nexts (seq-filter #'flycheck-may-use-checker
                                 (seq-mapcat #'flycheck-get-next-checkers nexts))))
-      (mapcar #'flymake-flycheck-diagnostic-function-for checkers))))
+      (mapcar #'flymake-flycheck-diagnostic-function-for (seq-uniq checkers)))))
 
 ;;;###autoload
 (defun flymake-flycheck-diagnostic-function-for (checker)
