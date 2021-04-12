@@ -66,7 +66,7 @@
   "Outputs debug messages if `flymake-flycheck-debug' is non-nil.
 MSG and ARGS are passed to `message'."
   (when flymake-flycheck-debug
-    (apply 'message (concat "[flymake-flycheck] " msg) args)))
+    (apply 'message (concat "[flymake-flycheck] (%s) " msg) (buffer-name) args)))
 
 ;;;###autoload
 (defun flymake-flycheck-all-available-diagnostic-functions ()
