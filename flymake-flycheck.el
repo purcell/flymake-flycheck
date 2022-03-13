@@ -130,7 +130,7 @@ Usually you will want to use `flymake-flycheck-all-chained-diagnostic-functions'
      (flycheck-error-pos err)
      (pcase (flycheck--exact-region err)
        (`(,beg . ,end) end)
-       (t (1+ (flycheck-error-pos err))))
+       (_ (1+ (flycheck-error-pos err))))
      (pcase (flycheck-error-level err)
        ('error 'flymake-error)
        ('warning 'flymake-warning)
