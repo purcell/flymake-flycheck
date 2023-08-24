@@ -94,34 +94,37 @@ Usually you will want to use `flymake-flycheck-all-chained-diagnostic-functions'
 ;;;###autoload
 (defun flymake-flycheck-diagnostic-function-for (checker)
   "Wrap CHECKER to make a `flymake-diagnostics-functions' backend."
-  (let ((fname (intern (format "flymake-flycheck:%s" checker))))
+  (let ((fname (intern (format "flymake-flycheck:%s" checker)))
+        (cur-check-var (intern (format "flymake-flycheck:%s--current-check" checker))))
+    (set-default cur-check-var nil)
+    (make-local-variable cur-check-var)
     (fset fname
-          (let (current-check)
-            (lambda (report-fn &rest _)
-              (when current-check
-                (flymake-flycheck--debug "interrupting defunct syntax check for %s" checker)
-                (flycheck-syntax-check-interrupt current-check)
-                (setq current-check nil))
-              (flymake-flycheck--debug "start syntax check for %s" checker)
-              (setq current-check (flycheck-syntax-check-new
-                                   :buffer (current-buffer)
-                                   :checker checker
-                                   :context nil
-                                   :working-directory (flycheck-compute-working-directory checker)))
-              (flycheck-syntax-check-start
-               current-check
-               (lambda (status &optional data)
-                 (flymake-flycheck--debug "received status %S from %s" status checker)
-                 (pcase status
-                   ('errored (funcall report-fn
-                                      :panic
-                                      :explanation (format "Flycheck checker %s reported error %S" checker data)))
-                   ('finished (funcall report-fn
-                                       (mapcar (apply-partially #'flymake-flycheck--translate-error checker) data)
-                                       :region (cons (point-min) (point-max))))
-                   ('interrupted (flymake-flycheck--debug "checker %s reported being interrupted %S" checker data))
-                   ('suspicious (flymake-flycheck--debug "checker %s reported suspicious result %S" checker data))
-                   (_ (flymake-flycheck--debug "unexpected status from checker %s: %S" checker status))))))))
+          (lambda (report-fn &rest _)
+            (when-let ((current-check (symbol-value cur-check-var)))
+              (flymake-flycheck--debug "interrupting defunct syntax check for %s" checker)
+              (flycheck-syntax-check-interrupt current-check)
+              (set-variable cur-check-var nil))
+            (flymake-flycheck--debug "start syntax check for %s" checker)
+            (set-variable cur-check-var
+                          (flycheck-syntax-check-new
+                           :buffer (current-buffer)
+                           :checker checker
+                           :context nil
+                           :working-directory (flycheck-compute-working-directory checker)))
+            (flycheck-syntax-check-start
+             (symbol-value cur-check-var)
+             (lambda (status &optional data)
+               (flymake-flycheck--debug "received status %S from %s" status checker)
+               (pcase status
+                 ('errored (funcall report-fn
+                                    :panic
+                                    :explanation (format "Flycheck checker %s reported error %S" checker data)))
+                 ('finished (funcall report-fn
+                                     (mapcar (apply-partially #'flymake-flycheck--translate-error checker) data)
+                                     :region (cons (point-min) (point-max))))
+                 ('interrupted (flymake-flycheck--debug "checker %s reported being interrupted %S" checker data))
+                 ('suspicious (flymake-flycheck--debug "checker %s reported suspicious result %S" checker data))
+                 (_ (flymake-flycheck--debug "unexpected status from checker %s: %S" checker status)))))))
     fname))
 
 (defun flymake-flycheck--translate-error (checker err)
