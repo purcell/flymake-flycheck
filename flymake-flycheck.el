@@ -23,26 +23,31 @@
 
 ;;; Commentary:
 
-;; WARNING: EARLY PREVIEW CODE, SUBJECT TO CHANGE
+;; The core of the package is the ability to wrap a single checker
+;; into a flymake diagnostic function which could be added to
+;; `flymake-diagnostic-functions':
 
-;; This package provides support for running any flycheck checker as a
-;; flymake diagnostic backend.  The effect is that flymake will
-;; control when the checker runs, and flymake will receive its errors.
+;;    (flymake-flycheck-diagnostic-function-for 'sh-shellcheck)
 
-;; For example, to enable a couple of flycheck checkers in a bash
-;; buffer, the following code is sufficient:
+;; Flycheck has the convenient notion of "available" checkers, which is
+;; determined at runtime according to mode and availability of necessary
+;; tools, as well as config for explicitly "chained" checkers.
 
-;;     (setq-local flymake-diagnostic-functions
-;;                 (list (flymake-flycheck-diagnostic-function-for 'sh-shellcheck)
-;;                       (flymake-flycheck-diagnostic-function-for 'sh-posix-bash)))
+;; Accordingly, you can obtain the diagnostic functions for all checkers
+;; that flycheck would enable in the current buffer like this:
 
-;; In order to add diagnostic functions for all checkers that are
-;; available in the current buffer, you can use:
+;;    (flymake-flycheck-all-chained-diagnostic-functions)
 
-;;     (setq-local flymake-diagnostic-functions (flymake-flycheck-all-chained-diagnostic-functions))
+;; In practical terms, most users will want to simply enable all
+;; available checkers whenever `flymake-mode' is enabled:
 
-;; but note that this will disable any existing flymake diagnostic
-;; backends.
+;;    (add-hook 'flymake-mode-hook 'flymake-flycheck-auto)
+
+;; If you find that `flymake' is now running `flycheck' checkers which
+;; are redundant because there's already a `flymake' equivalent, simply
+;; add those checkers to the `flycheck-disabled-checkers' variable, e.g.
+
+;;    (add-to-list 'flycheck-disabled-checkers 'sh-shellcheck)
 
 ;; Some caveats:
 
@@ -90,6 +95,13 @@ Usually you will want to use `flymake-flycheck-all-chained-diagnostic-functions'
         (setq nexts (seq-filter #'flycheck-may-use-checker
                                 (seq-mapcat #'flycheck-get-next-checkers nexts))))
       (mapcar #'flymake-flycheck-diagnostic-function-for (seq-uniq checkers)))))
+
+;;;###autoload
+(defun flymake-flycheck-auto ()
+  "Activate all available flycheck checkers in the current buffer."
+  (setq-local flymake-diagnostic-functions
+              (seq-uniq (append flymake-diagnostic-functions
+                                (flymake-flycheck-all-chained-diagnostic-functions)))))
 
 (defconst flymake-flycheck--wrapper-prefix "flymake-flycheck:")
 (defconst flymake-flycheck--force-redef nil)
