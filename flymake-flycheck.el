@@ -94,6 +94,12 @@ Usually you will want to use `flymake-flycheck-all-chained-diagnostic-functions'
 (defconst flymake-flycheck--wrapper-prefix "flymake-flycheck:")
 (defconst flymake-flycheck--force-redef nil)
 
+;; Remove old wrapper functions, just in case we're reloading this package
+(mapatoms (lambda (sym)
+            (when (string-prefix-p flymake-flycheck--wrapper-prefix (symbol-name sym))
+              (makunbound sym)
+              (fmakunbound sym))))
+
 ;;;###autoload
 (defun flymake-flycheck-diagnostic-function-for (checker)
   "Wrap CHECKER to make a `flymake-diagnostics-functions' backend."
