@@ -103,7 +103,7 @@ Usually you will want to use `flymake-flycheck-all-chained-diagnostic-functions'
                                        "--current-check"))))
     (unless (or (fboundp fname) flymake-flycheck--force-redef)
       (set-default cur-check-var nil)
-      (make-local-variable cur-check-var)
+      (make-variable-buffer-local cur-check-var)
       (fset fname (apply-partially 'flymake-flycheck--wrapper checker cur-check-var)))
     fname))
 
