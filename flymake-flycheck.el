@@ -6,7 +6,7 @@
 ;; Keywords: convenience, languages, tools
 ;; Homepage: https://github.com/purcell/flymake-flycheck
 ;; Version: 0.2
-;; Package-Requires: ((flycheck "31") (emacs "26.1"))
+;; Package-Requires: ((flycheck "31") (emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
