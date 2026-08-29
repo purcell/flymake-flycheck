@@ -131,29 +131,33 @@ With these args partially applied, the result is a standard
 flymake diagnostic function which accepts REPORT-FN etc."
   (when-let ((current-check (symbol-value cur-check-var)))
     (flymake-flycheck--debug "interrupting defunct syntax check for %s" checker)
-    (flycheck-syntax-check-interrupt current-check)
-    (set-variable cur-check-var nil))
+    (set-variable cur-check-var nil)
+    (flycheck-syntax-check-interrupt current-check))
   (flymake-flycheck--debug "start syntax check for %s" checker)
-  (set-variable cur-check-var
-                (flycheck-syntax-check-new
-                 :buffer (current-buffer)
+  (let* ((buffer (current-buffer))
+         (check (flycheck-syntax-check-new
+                 :buffer buffer
                  :checker checker
                  :context nil
-                 :working-directory (flycheck-compute-working-directory checker)))
-  (flycheck-syntax-check-start
-   (symbol-value cur-check-var)
-   (lambda (status &optional data)
-     (flymake-flycheck--debug "received status %S from %s" status checker)
-     (pcase status
-       ('errored (funcall report-fn
-                          :panic
-                          :explanation (format "Flycheck checker %s reported error %S" checker data)))
-       ('finished (funcall report-fn
-                           (mapcar 'flymake-flycheck--translate-error data)
-                           :region (cons (point-min) (point-max))))
-       ('interrupted (flymake-flycheck--debug "checker %s reported being interrupted %S" checker data))
-       ('suspicious (flymake-flycheck--debug "checker %s reported suspicious result %S" checker data))
-       (_ (flymake-flycheck--debug "unexpected status from checker %s: %S" checker status))))))
+                 :working-directory (flycheck-compute-working-directory checker))))
+    (set-variable cur-check-var check)
+    (flycheck-syntax-check-start
+     check
+     (lambda (status &optional data)
+       (when (and (buffer-live-p buffer)
+                  (eq check (buffer-local-value cur-check-var buffer)))
+         (with-current-buffer buffer
+           (flymake-flycheck--debug "received status %S from %s" status checker)
+           (pcase status
+             ('errored (funcall report-fn
+                                :panic
+                                :explanation (format "Flycheck checker %s reported error %S" checker data)))
+             ('finished (funcall report-fn
+                                 (mapcar 'flymake-flycheck--translate-error data)
+                                 :region (cons (point-min) (point-max))))
+             ('interrupted (flymake-flycheck--debug "checker %s reported being interrupted %S" checker data))
+             ('suspicious (flymake-flycheck--debug "checker %s reported suspicious result %S" checker data))
+             (_ (flymake-flycheck--debug "unexpected status from checker %s: %S" checker status)))))))))
 
 (defun flymake-flycheck--translate-error (err)
   "Translate flycheck CHECKER error ERR into a flymake diagnostic."
